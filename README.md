@@ -151,18 +151,6 @@ docker run -p 8080:8080 whatsapp-chatbot
 
 ---
 
-## ☁️ Deploy on Render
-
-1. Push code to GitHub
-2. Go to [render.com](https://render.com) → New Web Service
-3. Connect your GitHub repo
-4. Set **Build Command**: `mvn clean package -DskipTests`
-5. Set **Start Command**: `java -jar target/whatsapp-chatbot.jar`
-6. Set **Environment**: Java
-7. Deploy! 🎉
-
----
-
 ## 📬 Sample cURL Commands
 
 ```bash
