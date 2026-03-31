@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WhatsApp Chatbot — Live Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      color: #111;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #128C7E;
+      color: #fff;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    }
+    header .logo {
+      width: 44px; height: 44px;
+      background: #25D366;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    header h1 { font-size: 20px; font-weight: 600; }
+    header p  { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+    .status-pill {
+      margin-left: auto;
+      background: #25D366;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 14px;
+      border-radius: 20px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .dot { width: 8px; height: 8px; background: #fff; border-radius: 50%; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 1100px;
+      margin: 32px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media(max-width: 768px) { .container { grid-template-columns: 1fr; } }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 15px;
+      font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-body { padding: 20px; }
+
+    /* ── Chat UI ── */
+    .phone-frame {
+      background: #ECE5DD;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #ddd;
+    }
+    .phone-topbar {
+      background: #128C7E;
+      color: #fff;
+      padding: 10px 16px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; font-weight: 600;
+    }
+    .avatar {
+      width: 34px; height: 34px;
+      background: #25D366;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: #fff; font-weight: 700;
+    }
+    #chat-area {
+      height: 320px;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .bubble-wrap { display: flex; flex-direction: column; }
+    .bubble-wrap.user { align-items: flex-end; }
+    .bubble-wrap.bot  { align-items: flex-start; }
+    .bubble {
+      max-width: 75%;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .bubble.user { background: #DCF8C6; border-bottom-right-radius: 2px; }
+    .bubble.bot  { background: #fff;    border-bottom-left-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    .bubble-time { font-size: 11px; color: #888; margin-top: 2px; padding: 0 4px; }
+
+    .quick-btns {
+      padding: 8px 14px;
+      display: flex; flex-wrap: wrap; gap: 6px;
+      background: #f7f7f7;
+      border-top: 1px solid #e9e9e9;
+    }
+    .quick-btn {
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1.5px solid #128C7E;
+      background: #fff;
+      color: #128C7E;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .quick-btn:hover { background: #128C7E; color: #fff; }
+
+    .chat-input-row {
+      display: flex; gap: 8px; padding: 10px 14px;
+      background: #f0f0f0;
+      border-top: 1px solid #ddd;
+    }
+    .chat-input-row input {
+      flex: 1;
+      padding: 9px 14px;
+      border-radius: 24px;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      background: #fff;
+    }
+    .send-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #128C7E;
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .send-btn:hover { background: #0a6b5e; }
+
+    /* ── API Tester ── */
+    .endpoint-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .endpoint-row:last-child { border-bottom: none; }
+    .method-badge {
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: monospace;
+      min-width: 48px;
+      text-align: center;
+    }
+    .post { background: #FFF3CD; color: #856404; }
+    .get  { background: #D1E7DD; color: #0F5132; }
+    .endpoint-path { font-family: monospace; font-size: 13px; color: #333; flex: 1; }
+    .endpoint-desc { font-size: 12px; color: #888; }
+    .try-btn {
+      padding: 5px 14px;
+      border-radius: 8px;
+      border: 1.5px solid #128C7E;
+      background: transparent;
+      color: #128C7E;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .try-btn:hover { background: #128C7E; color: #fff; }
+
+    /* ── Response viewer ── */
+    #response-box {
+      background: #1e1e1e;
+      color: #9cdcfe;
+      border-radius: 10px;
+      padding: 14px;
+      font-family: monospace;
+      font-size: 13px;
+      min-height: 80px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin-top: 14px;
+    }
+
+    /* ── Stats bar ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .stat-num { font-size: 28px; font-weight: 700; color: #128C7E; }
+    .stat-lbl { font-size: 12px; color: #888; margin-top: 4px; }
+
+    /* ── Log table ── */
+    #log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    #log-table th {
+      text-align: left; padding: 8px 10px;
+      background: #f8f8f8; color: #555;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      border-bottom: 1px solid #eee;
+    }
+    #log-table td { padding: 9px 10px; border-bottom: 1px solid #f5f5f5; }
+    #log-table tr:last-child td { border-bottom: none; }
+    .empty-log { text-align: center; color: #bbb; padding: 24px; font-size: 13px; }
+
+    .full-width { grid-column: 1 / -1; }
+    .tag {
+      display: inline-block;
+      background: #e8f5e9; color: #2e7d32;
+      font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 10px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">💬</div>
+  <div>
+    <h1>WhatsApp Chatbot Backend</h1>
+    <p>Spring Boot 3.2.3 · Java 21 · REST API Simulation</p>
+  </div>
+  <div class="status-pill"><div class="dot"></div> Server Running</div>
+</header>
+
+<div class="container">
+
+  <!-- Stats -->
+  <div class="full-width stats-row">
+    <div class="stat-card">
+      <div class="stat-num" id="stat-total">0</div>
+      <div class="stat-lbl">Messages Processed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">8080</div>
+      <div class="stat-lbl">Server Port</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:#25D366;">UP</div>
+      <div class="stat-lbl">API Status</div>
+    </div>
+  </div>
+
+  <!-- LEFT: Chat UI -->
+  <div class="card">
+    <div class="card-header">
+      💬 Live Chat Demo
+      <span style="margin-left:auto;font-size:12px;color:#888;font-weight:400;">Calls POST /webhook in real time</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <div class="phone-frame">
+        <div class="phone-topbar">
+          <div class="avatar">B</div>
+          <div>
+            <div>WhatsApp Bot</div>
+            <div style="font-size:11px;opacity:0.8;">online</div>
+          </div>
+        </div>
+
+        <div id="chat-area">
+          <div class="bubble-wrap bot">
+            <div class="bubble bot">👋 Hi! I'm your WhatsApp chatbot. Try sending me a message!</div>
+            <div class="bubble-time">Bot · just now</div>
+          </div>
+        </div>
+
+        <div class="quick-btns">
+          <button class="quick-btn" onclick="quickSend('Hi')">Hi</button>
+          <button class="quick-btn" onclick="quickSend('Bye')">Bye</button>
+          <button class="quick-btn" onclick="quickSend('Help')">Help</button>
+          <button class="quick-btn" onclick="quickSend('Hours')">Hours</button>
+          <button class="quick-btn" onclick="quickSend('Contact')">Contact</button>
+          <button class="quick-btn" onclick="quickSend('Price')">Price</button>
+          <button class="quick-btn" onclick="quickSend('Thank you')">Thank you</button>
+        </div>
+
+        <div class="chat-input-row">
+          <input type="text" id="msg-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMsg()"/>
+          <button class="send-btn" onclick="sendMsg()">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: API Tester -->
+  <div class="card">
+    <div class="card-header">🔌 API Endpoint Tester</div>
+    <div class="card-body">
+      <div class="endpoint-row">
+        <span class="method-badge post">POST</span>
+        <span class="endpoint-path">/webhook</span>
+        <span class="endpoint-desc">Send message</span>
+        <button class="try-btn" onclick="tryPost()">Try it</button>
+      </div>
+      <div class="endpoint-row">
+        <span class="method-badge get">GET</span>
+        <span class="endpoint-path">/webhook/health</span>
+        <span class="endpoint-desc">Health check</span>
+        <button class="try-btn" onclick="tryGet('/webhook/health')">Try it</button>
+      </div>
+      <div class="endpoint-row">
+        <span class="method-badge get">GET</span>
+        <span class="endpoint-path">/webhook/logs</span>
+        <span class="endpoint-desc">Message logs</span>
+        <button class="try-btn" onclick="tryGet('/webhook/logs')">Try it</button>
+      </div>
+      <div class="endpoint-row">
+        <span class="method-badge get">GET</span>
+        <span class="endpoint-path">/webhook/stats</span>
+        <span class="endpoint-desc">Bot statistics</span>
+        <button class="try-btn" onclick="tryGet('/webhook/stats')">Try it</button>
+      </div>
+
+      <div style="margin-top:14px;">
+        <div style="font-size:12px;color:#888;margin-bottom:6px;">POST body (editable):</div>
+        <textarea id="post-body" rows="5" style="width:100%;font-family:monospace;font-size:12px;border:1px solid #ddd;border-radius:8px;padding:10px;resize:vertical;">{
+  "from": "+91-9876543210",
+  "message": "Hi",
+  "timestamp": "2026-03-31T11:00:00",
+  "messageId": "msg_001"
+}</textarea>
+      </div>
+
+      <div style="font-size:12px;color:#888;margin-top:4px;">Response:</div>
+      <div id="response-box">// Click "Try it" on any endpoint above...</div>
+    </div>
+  </div>
+
+  <!-- BOTTOM: Message Log -->
+  <div class="card full-width">
+    <div class="card-header">
+      📋 Message Log
+      <span id="log-count" style="margin-left:8px;" class="tag">0 messages</span>
+      <button onclick="clearLogs()" style="margin-left:auto;padding:4px 12px;border-radius:8px;border:1px solid #ddd;background:#fff;font-size:12px;cursor:pointer;color:#888;">Clear</button>
+    </div>
+    <div class="card-body" style="padding:0;overflow-x:auto;">
+      <table id="log-table">
+        <thead>
+          <tr>
+            <th>Log ID</th>
+            <th>From</th>
+            <th>Message</th>
+            <th>Bot Reply</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="log-body">
+          <tr><td colspan="5" class="empty-log">No messages yet — send one above!</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<footer>WhatsApp Chatbot Backend Simulation · Built with Spring Boot 3.2.3 · Internship Assignment</footer>
+
+<script>
+  var totalMessages = 0;
+  var logs = [];
+
+  function now() {
+    return new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  }
+
+  function addBubble(text, isUser) {
+    var area = document.getElementById('chat-area');
+    var wrap = document.createElement('div');
+    wrap.className = 'bubble-wrap ' + (isUser ? 'user' : 'bot');
+    wrap.innerHTML =
+      '<div class="bubble ' + (isUser ? 'user' : 'bot') + '">' + escHtml(text) + '</div>' +
+      '<div class="bubble-time">' + (isUser ? '+91-9876543210' : 'Bot') + ' · ' + now() + '</div>';
+    area.appendChild(wrap);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  function quickSend(msg) {
+    document.getElementById('msg-input').value = msg;
+    sendMsg();
+  }
+
+  function sendMsg() {
+    var input = document.getElementById('msg-input');
+    var text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    addBubble(text, true);
+
+    var body = {
+      from: '+91-9876543210',
+      message: text,
+      timestamp: new Date().toISOString(),
+      messageId: 'msg_' + Math.random().toString(36).substr(2,5)
+    };
+
+    fetch('/webhook', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      addBubble(data.reply || 'No reply', false);
+      totalMessages++;
+      document.getElementById('stat-total').textContent = totalMessages;
+      addLog(body.messageId.toUpperCase(), body.from, text, data.reply, now());
+    })
+    .catch(function(err) {
+      addBubble('Error: Could not reach server.', false);
+    });
+  }
+
+  function addLog(id, from, msg, reply, time) {
+    logs.unshift({id, from, msg, reply, time});
+    document.getElementById('log-count').textContent = logs.length + ' message' + (logs.length===1?'':'s');
+    renderLogs();
+  }
+
+  function renderLogs() {
+    var tbody = document.getElementById('log-body');
+    if (!logs.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-log">No messages yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = logs.map(function(l) {
+      return '<tr>' +
+        '<td><code style="font-size:11px;color:#128C7E;">' + l.id + '</code></td>' +
+        '<td style="color:#555;">' + l.from + '</td>' +
+        '<td><strong>' + escHtml(l.msg) + '</strong></td>' +
+        '<td style="color:#0a6b5e;">' + escHtml((l.reply||'').split('\n')[0]) + '</td>' +
+        '<td style="color:#aaa;font-size:12px;">' + l.time + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  function clearLogs() {
+    logs = [];
+    totalMessages = 0;
+    document.getElementById('stat-total').textContent = '0';
+    document.getElementById('log-count').textContent = '0 messages';
+    renderLogs();
+  }
+
+  function tryPost() {
+    var bodyText = document.getElementById('post-body').value;
+    var body;
+    try { body = JSON.parse(bodyText); } catch(e) { showResponse('Invalid JSON in body!'); return; }
+    fetch('/webhook', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){ showResponse(JSON.stringify(data, null, 2)); })
+    .catch(function(e){ showResponse('Error: ' + e.message); });
+  }
+
+  function tryGet(path) {
+    fetch(path)
+      .then(function(r){ return r.json(); })
+      .then(function(data){ showResponse(JSON.stringify(data, null, 2)); })
+      .catch(function(e){ showResponse('Error: ' + e.message); });
+  }
+
+  function showResponse(text) {
+    document.getElementById('response-box').textContent = text;
+  }
+</script>
+</body>
+</html>
