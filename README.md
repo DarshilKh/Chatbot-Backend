@@ -175,4 +175,6 @@ curl http://localhost:8080/webhook/logs
 
 ## 👨‍💻 Author
 
+Darshil Khandelwal
+
 Built with ❤️ using Java & Spring Boot for internship assignment submission.
