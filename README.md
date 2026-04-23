@@ -2,6 +2,12 @@
 
 A Spring Boot REST API that simulates a WhatsApp chatbot webhook. Built as part of an internship assignment.
 
+## 📸 Screenshots
+
+![Chat Demo](screenshots/wp%201.jpeg)
+![API Tester](screenshots/wp%202.jpeg)
+![Dashboard](screenshots/wp%203.jpeg)
+
 ---
 
 ## 🚀 Tech Stack
